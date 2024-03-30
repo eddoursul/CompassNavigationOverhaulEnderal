@@ -4,21 +4,6 @@
 
 #include "HUDMarkerManager.h"
 
-RE::BSTArray<RE::BGSInstancedQuestObjective>& GetPlayerObjectives()
-{
-	auto playerAddress = reinterpret_cast<std::uintptr_t>(RE::PlayerCharacter::GetSingleton());
-
-	std::size_t objectivesOffset;
-	if (REL::Module::IsVR())
-	{
-		objectivesOffset = 0xB70;
-	} else {
-		objectivesOffset = REL::Module::get().version().compare(SKSE::RUNTIME_SSE_1_6_629) == std::strong_ordering::less ? 0x580 : 0x588;
-	}
-
-	return *reinterpret_cast<RE::BSTArray<RE::BGSInstancedQuestObjective>*>(playerAddress + objectivesOffset);
-}
-
 namespace hooks
 {
 	bool UpdateQuests(const RE::HUDMarkerManager* a_hudMarkerManager, RE::HUDMarker::ScaleformData* a_markerData,
@@ -34,14 +19,18 @@ namespace hooks
 		{
 			RE::TESObjectREFR* marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();
 
-			RE::BSTArray<RE::BGSInstancedQuestObjective>& playerObjectives = GetPlayerObjectives();
+			auto player = RE::PlayerCharacter::GetSingleton();
 
-			RE::TESQuest* quest = nullptr;
-			RE::BGSInstancedQuestObjective objective;
-			RE::TESQuestTarget* target = nullptr;
-			for (int i = 0; i < playerObjectives.size(); i++)
+			RE::BSTArray<RE::BGSInstancedQuestObjective>& playerObjectives = REL::Module::IsVR() ?
+																				player->GetVRPlayerRuntimeData().objectives :
+																				player->GetPlayerRuntimeData().objectives;
+
+			// The objectives are in oldest-to-newest order, so we iterate from newest-to-oldest
+			// to have it in the same order as in the journal
+			for (int ageIndex = playerObjectives.size() - 1; ageIndex >= 0; ageIndex--)
 			{
-				RE::BGSQuestObjective* questObjective = playerObjectives[i].objective;
+				RE::BGSInstancedQuestObjective* playerObjective = &playerObjectives[ageIndex];
+				RE::BGSQuestObjective* questObjective = playerObjective->objective;
 
 				for (int j = 0; j < questObjective->numTargets; j++)
 				{
@@ -49,15 +38,13 @@ namespace hooks
 
 					if (questObjectiveTarget == questObjective->targets[j])
 					{
-						quest = questObjective->ownerQuest;
-						objective = playerObjectives[i];
-						target = questObjectiveTarget;
-						break;
+						RE::TESQuest* quest = questObjective->ownerQuest;
+						CNO::HUDMarkerManager::GetSingleton()->ProcessQuestMarker(quest, playerObjective, ageIndex,
+																				  marker, a_markerGotoFrame);
+						return true;
 					}
 				}
 			}
-
-			extended::HUDMarkerManager::GetSingleton()->ProcessQuestMarker(quest, objective, target, marker, a_markerGotoFrame);
 
 			return true;
 		}
@@ -102,14 +89,12 @@ namespace hooks
 		{
 			auto mapMarker = marker->extraList.GetByType<RE::ExtraMapMarker>();
 
-			auto frameOffsets = RE::HUDMarker::FrameOffsets::GetSingleton();
-
 			// Unvisited markers keep being shown in any case
 			if (settings::display::showUndiscoveredLocationMarkers || mapMarker->mapData->flags.all(RE::MapMarkerData::Flag::kVisible))
 			{
 				if (HUDMarkerManager::AddMarker(a_hudMarkerManager, a_markerData, a_pos, a_refHandle, a_markerGotoFrame)) 
 				{
-					extended::HUDMarkerManager::GetSingleton()->ProcessLocationMarker(mapMarker, marker, a_markerGotoFrame);
+					CNO::HUDMarkerManager::GetSingleton()->ProcessLocationMarker(mapMarker, marker, a_markerGotoFrame);
 
 					return true;
 				}
@@ -128,7 +113,7 @@ namespace hooks
 			{
 				RE::TESObjectREFR* marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();
 
-				extended::HUDMarkerManager::GetSingleton()->ProcessEnemyMarker(marker->As<RE::Character>(), a_markerGotoFrame);
+				CNO::HUDMarkerManager::GetSingleton()->ProcessEnemyMarker(marker->As<RE::Character>(), a_markerGotoFrame);
 
 				return true;
 			}
@@ -144,7 +129,7 @@ namespace hooks
 		{
 			RE::TESObjectREFR* marker = RE::TESObjectREFR::LookupByHandle(a_refHandle).get();
 
-			extended::HUDMarkerManager::GetSingleton()->ProcessPlayerSetMarker(marker, a_markerGotoFrame);
+			CNO::HUDMarkerManager::GetSingleton()->ProcessPlayerSetMarker(marker, a_markerGotoFrame);
 
 			return true;
 		}
@@ -152,13 +137,11 @@ namespace hooks
 		return false;
 	}
 
-	bool SetCompassMarkers(RE::GFxValue::ObjectInterface* a_objectInterface, void* a_data,
-						   RE::GFxValue* a_result, const char* a_name, const RE::GFxValue* a_args,
-						   std::uint32_t a_numArgs, bool a_isDObj)
+	void UpdateCompass(RE::Compass* a_compass)
 	{
-		extended::HUDMarkerManager::GetSingleton()->SetMarkers();
+		hooks::Compass::Update(a_compass);
 
-		return true;
+		CNO::HUDMarkerManager::GetSingleton()->SetMarkersExtraInfo();
 	}
 
 	namespace compat

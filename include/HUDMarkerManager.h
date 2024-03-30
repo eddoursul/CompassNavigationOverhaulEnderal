@@ -4,16 +4,14 @@
 
 #include "Settings.h"
 
-#include "FocusedMarker.h"
 #include "Compass.h"
 #include "QuestItemList.h"
 
-namespace extended
+namespace CNO
 {
 	class HUDMarkerManager
 	{
 	public:
-
 		static HUDMarkerManager* GetSingleton()
 		{
 			static HUDMarkerManager singleton;
@@ -21,26 +19,26 @@ namespace extended
 			return &singleton;
 		}
 
-		void ProcessQuestMarker(RE::TESQuest* a_quest, RE::BGSInstancedQuestObjective& a_objective, RE::TESQuestTarget* a_target,
-								RE::TESObjectREFR* a_marker, std::uint32_t a_markerGotoFrame);
+		void ProcessQuestMarker(RE::TESQuest* a_quest, RE::BGSInstancedQuestObjective* a_questObjective,
+								int a_questAgeIndex, RE::TESObjectREFR* a_marker, std::uint32_t a_markerIcon);
 
 		void ProcessLocationMarker(RE::ExtraMapMarker* a_mapMarker, RE::TESObjectREFR* a_marker,
-								   std::uint32_t a_markerGotoFrame);
+								   std::uint32_t a_markerIcon);
 
-		void ProcessEnemyMarker(RE::Character* a_enemy, std::uint32_t a_markerGotoFrame);
+		void ProcessEnemyMarker(RE::Character* a_enemy, std::uint32_t a_markerIcon);
 
-		void ProcessPlayerSetMarker(RE::TESObjectREFR* a_marker, std::uint32_t a_markerGotoFrame);
+		void ProcessPlayerSetMarker(RE::TESObjectREFR* a_marker, std::uint32_t a_markerIcon);
 
-		void SetMarkers();
+		void SetMarkersExtraInfo();
 
 	private:
 
-		bool IsTheFocusedMarker(const RE::TESObjectREFR* a_marker) const { return focusedMarker && a_marker == focusedMarker->ref; }
+		bool IsTheFocusedMarker(const RE::TESObjectREFR* a_marker) const
+		{
+			return focusedMarker && a_marker == focusedMarker->ref;
+		}
 
-		std::shared_ptr<FocusedMarker> GetFacedMarkerUpdated(const RE::TESObjectREFR* a_marker, float a_angleToPlayerCamera);
-
-		std::shared_ptr<FocusedMarker>
-		GetMostCenteredMarkerOf(const std::unordered_map<const RE::TESObjectREFR*, std::shared_ptr<FocusedMarker>>& a_facedMarkers) const;
+		std::unique_ptr<Compass::Marker> GetMostCenteredMarker() const;
 
 		bool UpdateFocusedMarker();
 
@@ -58,12 +56,15 @@ namespace extended
 		float facingAngle = settings::display::angleToShowMarkerDetails;
 		float keepFocusedAngle = settings::display::angleToKeepMarkerDetailsShown;
 
-		std::unordered_map<const RE::TESObjectREFR*, std::shared_ptr<FocusedMarker>> facedMarkers;
-		std::shared_ptr<FocusedMarker> focusedMarker;
+		float timePreFocusingMarker = 0.0F;
 		float timeFocusingMarker = 0.0F;
 
-		std::shared_ptr<FocusedMarker> lastMostCenteredMarker = nullptr;
-		float timeFacingMarker = 0.0F;
+		std::vector<Compass::Marker> facedMarkers;
+		std::unique_ptr<Compass::Marker> preFocusedMarker;
+		std::unique_ptr<Compass::Marker> focusedMarker;
+
+		std::unordered_map<RE::TESObjectREFR*, std::unordered_map<RE::TESQuest*, QuestItem>> questItems;
+		std::unordered_map<RE::TESObjectREFR*, QuestItem> miscQuestItem;
 
 		RE::HUDMarkerManager* const hudMarkerManager = RE::HUDMarkerManager::GetSingleton();
 		RE::PlayerCharacter* player = RE::PlayerCharacter::GetSingleton();

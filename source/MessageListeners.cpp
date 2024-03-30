@@ -1,7 +1,7 @@
 #include "Settings.h"
 
 #include "IUI/API.h"
-#include "NPCNameProvider.h"
+#include "NND/NPCNameProvider.h"
 
 #include "Compass.h"
 #include "QuestItemList.h"
@@ -31,7 +31,7 @@ void SKSEMessageListener(SKSE::MessagingInterface::Message* a_msg)
 			logger::error("Infinity UI installation not detected. Please, download it from https://www.nexusmods.com/skyrimspecialedition/mods/74483");
 		}
 
-		NPCNameProvider::GetSingleton()->RequestAPI();
+		NND::NPCNameProvider::GetSingleton()->RequestAPI();
 
 		const SKSE::PluginInfo* mapMarkerFrameworkPluginInfo = skse->GetPluginInfo("MapMarkerFramework");
 
@@ -73,10 +73,10 @@ void InfinityUIMessageListener(SKSE::MessagingInterface::Message* a_msg)
 			{
 				std::string pathToOriginal = preReplaceMessage->originalInstance.ToString().c_str();
 
-				if (pathToOriginal == extended::Compass::path)
+				if (pathToOriginal == CNO::Compass::path)
 				{
-					extended::Compass::InitSingleton(preReplaceMessage->originalInstance);
-					auto compass = extended::Compass::GetSingleton();
+					CNO::Compass::InitSingleton(preReplaceMessage->originalInstance);
+					auto compass = CNO::Compass::GetSingleton();
 
 					logger::debug("Before replacing:");
 					memberLogger.LogMembersOf(*compass);
@@ -91,11 +91,11 @@ void InfinityUIMessageListener(SKSE::MessagingInterface::Message* a_msg)
 			{
 				std::string pathToNew = postPatchMessage->newInstance.ToString().c_str();
 
-				if (pathToNew == extended::Compass::path)
+				if (pathToNew == CNO::Compass::path)
 				{
 					// We initialised the CompassShoutMeterHolder singleton in the pre-replace step,
 					// if not, there has been an error
-					if (auto compass = extended::Compass::GetSingleton())
+					if (auto compass = CNO::Compass::GetSingleton())
 					{
 						compass->SetupMod(postPatchMessage->newInstance);
 						compass->SetUnits(settings::display::useMetricUnits);
@@ -113,7 +113,7 @@ void InfinityUIMessageListener(SKSE::MessagingInterface::Message* a_msg)
 					}
 					else
 					{
-						logger::error("Compass instance counterpart not ready for {}", extended::Compass::path);
+						logger::error("Compass instance counterpart not ready for {}", CNO::Compass::path);
 					}
 				}
 				else if (pathToNew == QuestItemList::path)
@@ -133,9 +133,9 @@ void InfinityUIMessageListener(SKSE::MessagingInterface::Message* a_msg)
 			{
 				std::string pathToOriginal = abortPatchMessage->originalValue.ToString().c_str();
 
-				if (pathToOriginal == extended::Compass::path)
+				if (pathToOriginal == CNO::Compass::path)
 				{
-					logger::error("Aborted replacement of {}", extended::Compass::path);
+					logger::error("Aborted replacement of {}", CNO::Compass::path);
 				}
 			}
 			break;

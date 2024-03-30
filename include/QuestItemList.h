@@ -5,10 +5,27 @@
 
 #include "Settings.h"
 
+struct QuestItem
+{
+	QuestItem() = default;
+
+	QuestItem(RE::TESObjectREFR* a_markerRef, RE::QUEST_DATA::Type a_questType, const std::string& a_questName,
+			  bool a_isInSameLocation, int a_questAgeIndex)
+	: markerRef{ a_markerRef }, type{ a_questType }, name{ a_questName }, isInSameLocation{ a_isInSameLocation },
+	  ageIndex{ a_questAgeIndex }
+	{}
+
+	RE::TESObjectREFR* markerRef;
+	RE::QUEST_DATA::Type type;
+	std::string name;
+	bool isInSameLocation;
+	std::vector<RE::BGSInstancedQuestObjective*> objectives;
+	int ageIndex;
+};
+
 class QuestItemList : public IUI::GFxDisplayObject
 {
 public:
-
 	static constexpr inline std::string_view path = "_level0.HUDMovieBaseInstance.QuestItemList";
 
 	static void InitSingleton(const GFxDisplayObject& a_questItemList)
@@ -48,17 +65,17 @@ public:
 		Invoke("AddToHudElements");
 	}
 
-	void AddQuest(RE::QUEST_DATA::Type a_questType, const std::string& a_questName, bool a_isInSameLocation,
-				  const std::vector<std::string>& a_questObjectives, int a_questAgeIndex)
+	void AddQuest(const QuestItem& a_questItem)
 	{
 		GFxArray gfxQuestObjectives{ GetMovieView() };
 
-		for (const std::string& questObjective : a_questObjectives)
+		for (const RE::BGSInstancedQuestObjective* questObjective : a_questItem.objectives)
 		{
-			gfxQuestObjectives.PushBack(questObjective.c_str());
+			gfxQuestObjectives.PushBack(questObjective->GetDisplayTextWithReplacedTags().c_str());
 		}
 
-		Invoke("AddQuest", a_questType, a_questName.c_str(), a_isInSameLocation, gfxQuestObjectives, a_questAgeIndex);
+		Invoke("AddQuest", a_questItem.type, a_questItem.name.c_str(), a_questItem.isInSameLocation,
+			   gfxQuestObjectives, a_questItem.ageIndex);
 	}
 
 	void SetQuestSide(const std::string& a_sideName)

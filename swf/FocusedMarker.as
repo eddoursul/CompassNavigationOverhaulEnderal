@@ -1,5 +1,8 @@
 class FocusedMarker extends MovieClip
 {
+	static var UNITS_TO_METERS:Number = 0.01428;
+	static var UNITS_TO_FEET:Number = 0.046875;
+
 	// Instances
 	var HeightIndicatorInstance:MovieClip;
 	var Distance:MovieClip;
@@ -22,18 +25,19 @@ class FocusedMarker extends MovieClip
 
 	public function SetDistanceAndHeightDifference(a_distance:Number, a_heightDifference:Number):Void
 	{
-		if (UseMetricUnits) // Meters
+		if (UseMetricUnits)
 		{
-			Distance.TextFieldInstance.text = String(Math.floor(a_distance * 0.01428)) + " m";
+			Distance.TextFieldInstance.text = String(Math.floor(a_distance * UNITS_TO_METERS)) + " m";
 		}
-		else // Feet
+		else
 		{
-			Distance.TextFieldInstance.text = String(Math.floor(a_distance * 0.046875)) + " ft ";
+			Distance.TextFieldInstance.text = String(Math.floor(a_distance * UNITS_TO_FEET)) + " ft ";
 		}
 
 		Distance.HeightIndicatorInstance._x = Distance.TextFieldInstance._x + Distance.TextFieldInstance._width +
 											  Distance.HeightIndicatorInstance._width / 3;
 
+		// Height like 3 or 4 floors. Measured in Skyrim units.
 		if (a_heightDifference > 840)
 		{
 			Distance.HeightIndicatorInstance._alpha = Math.max(Movie._alpha, 75);

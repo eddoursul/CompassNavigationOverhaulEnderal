@@ -6,7 +6,7 @@
 /*
 * For modders: Copy this file into your own project if you wish to use this API
 */
-namespace NND_API
+namespace NND::API
 {
 	constexpr auto NNDPluginName = "NPCsNamesDistributor";
 

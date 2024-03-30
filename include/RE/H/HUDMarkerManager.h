@@ -8,7 +8,6 @@ namespace RE
 	class HUDMarker
 	{
 	public:
-
 		struct FrameOffsets
 		{
 			static FrameOffsets* GetSingleton()
@@ -30,7 +29,7 @@ namespace RE
 		{
 			GFxValue heading;  // 00 - angle relative to camera
 			GFxValue alpha;	   // 18
-			GFxValue type;	   // 30 - Goto and stop frame in flash
+			GFxValue icon;	   // 30 - Goto and stop frame in flash
 			GFxValue scale;	   // 48
 		};
 		static_assert(sizeof(ScaleformData) == 0x60);
@@ -56,7 +55,6 @@ namespace RE
 	class HUDMarkerManager
 	{
 	public:
-
 		static HUDMarkerManager* GetSingleton()
 		{
 			REL::Relocation<HUDMarkerManager*> singleton{ RELOCATION_ID(519611, 406154) };

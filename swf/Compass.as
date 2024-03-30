@@ -12,27 +12,48 @@ var CompassFrameAlt:MovieClip;
 var FocusedMarkerInstance:FocusedMarker;
 
 // References
-var MarkerList:Array = _root.HUDMovieBaseInstance.CompassMarkerList;
+var HUDMenu:MovieClip = _root.HUDMovieBaseInstance;
+var MarkerList:Array = HUDMenu.CompassMarkerList;
+var MarkersData:Array = HUDMenu.CompassTargetDataA;
+
+// Variables and constants
+var MarkerQuest:Number = HUDMenu.CompassMarkerQuest;
+var MarkerQuestDoor:Number = HUDMenu.CompassMarkerQuestDoor;
+var MarkerUnknownLocation:Number = 0;
+
+var COMPASS_HEADING:Number = 0;
+var COMPASS_ALPHA:Number = 1;
+var COMPASS_GOTOANDSTOP:Number = 2;
+var COMPASS_SCALE:Number = 3;
+var COMPASS_STRIDE:Number = 4;
 
 function Compass():Void
 {
 	CompassTemperatureHolderInstance.gotoAndStop("Empty");
-	_root.HUDMovieBaseInstance.TemperatureMeter_mc = CompassTemperatureHolderInstance;
+	HUDMenu.TemperatureMeter_mc = CompassTemperatureHolderInstance;
 
-	_root.HUDMovieBaseInstance.CompassRect = DirectionRect;
+	HUDMenu.CompassRect = DirectionRect;
 
-	if (_root.HUDMovieBaseInstance.CompassFrameAlt == undefined)
+	// Hide in dialogue mode
+	delete HUDMenu.CompassShoutMeterHolder["DialogueMode"];
+
+	// SkyHUD compatibility
+	if (HUDMenu.CompassFrameAlt == undefined)
 	{
 		CompassFrameAlt._visible = false;
 		DirectionRect.CompassDirectionTextAlt._visible = false;
 	}
 	else
 	{
-		_root.HUDMovieBaseInstance.CompassFrame = CompassFrame;
-		_root.HUDMovieBaseInstance.CompassFrameAlt = CompassFrameAlt;
-		_root.HUDMovieBaseInstance.CompassCard = DirectionRect.CompassDirectionText;
-		_root.HUDMovieBaseInstance.CompassCardAlt = DirectionRect.CompassDirectionTextAlt;
+		HUDMenu.CompassFrame = CompassFrame;
+		HUDMenu.CompassFrameAlt = CompassFrameAlt;
+		HUDMenu.CompassCard = DirectionRect.CompassDirectionText;
+		HUDMenu.CompassCardAlt = DirectionRect.CompassDirectionTextAlt;
 	}
+
+	// Hook SetCompassMarkers
+	delete HUDMenu.SetCompassMarkers;
+	HUDMenu.SetCompassMarkers = SetMarkers;
 }
 
 function SetUnits(a_useMetric:Boolean):Void
@@ -40,75 +61,132 @@ function SetUnits(a_useMetric:Boolean):Void
 	FocusedMarkerInstance.UseMetricUnits = a_useMetric;
 }
 
-function SetMarkerInfo(a_target:String, a_distance:Number, a_heightDifference:Number):Void
+function SetFocusedMarkerInfo(a_target:String, a_distance:Number, a_heightDifference:Number, a_markerIndex:Number):Void
 {
 	FocusedMarkerInstance.SetDistanceAndHeightDifference(a_distance, a_heightDifference);
+	FocusedMarkerInstance.Movie = MarkerList[a_markerIndex].movie;
+	FocusedMarkerInstance.Index = a_markerIndex;
 	FocusedMarkerInstance.Target.TextFieldInstance.text = a_target;
 }
 
-function FocusMarker(a_markerIndex:Number):Void
+function FocusMarker():Void
 {
 	FocusedMarkerInstance.gotoAndPlay("FadeIn");
-	UpdateMarker(a_markerIndex);
 }
 
-function UpdateMarker(a_markerIndex:Number):Void
+function UpdateFocusedMarker():Void
 {
-	FocusedMarkerInstance.Movie = MarkerList[a_markerIndex].movie;
-	FocusedMarkerInstance.Index = a_markerIndex;
+	var focusedMarker_mc:MovieClip = FocusedMarkerInstance.Movie;
 
-	// Workaround-fix for pop-up out of compass when changing index
-	var focusedMarker_x:Number = localToLocal(FocusedMarkerInstance.Movie, this).x;
-	var compassMask_x:Number = localToLocal(CompassMask_mc, this).x;
-	if (focusedMarker_x >= compassMask_x)
+	if (focusedMarker_mc != undefined)
 	{
-		FocusedMarkerInstance._x = focusedMarker_x;
-	}
-	FocusedMarkerInstance._alpha = Math.max(FocusedMarkerInstance.Movie._alpha, 75);
+		// SkyHUD rescale functionality
+		var skyHUDScaleMult:Number = (HUDMenu.scl_fCompassMarker != undefined && HUDMenu.scl_fCompassMarker != NaN) ? HUDMenu.scl_fCompassMarker : 1;
 
-	if (_root.HUDMovieBaseInstance.EnemyHealth_mc.BracketsInstance._alpha)
-	{
-		FocusedMarkerInstance.Target.TextFieldInstance._alpha = 0;
-	}
-	else
-	{
-		FocusedMarkerInstance.Target.TextFieldInstance._alpha = 100;
-	}
+		var markerScale:Number = MarkersData[FocusedMarkerInstance.Index * COMPASS_STRIDE + COMPASS_SCALE] * skyHUDScaleMult;
 
-	// iHUD show/hide functionality
-	if (DirectionRect._alpha)
-	{
-		FocusedMarkerInstance._alpha = 100;
-	}
-	else
-	{
-		FocusedMarkerInstance._alpha = 0;
-	}
-}
+		markerScale = Math.min(145, markerScale * 1.325);
 
-function UnfocusMarker(a_markerIndex:Number):Void
-{
-	FocusedMarkerInstance.gotoAndPlay("FadeOut");
-	FocusedMarkerInstance.Movie = undefined;
-	FocusedMarkerInstance.Index = -1;
-}
+		focusedMarker_mc._xscale = markerScale;
+		focusedMarker_mc._yscale = markerScale;
 
-function SetMarkersSize():Void
-{
-	var MarkerList_length:Number = MarkerList.length;
-	for (var i:Number = 0; i < MarkerList_length; i++)
-	{
-		var marker:MovieClip = MarkerList[i].movie;
-
-		if (i == FocusedMarkerInstance.Index)
+		// Workaround-fix for pop-up out of compass when changing index
+		var focusedMarker_x:Number = localToLocal(focusedMarker_mc, this).x;
+		var compassMask_x:Number = localToLocal(CompassMask_mc, this).x;
+		if (focusedMarker_x >= compassMask_x)
 		{
-			marker._xscale = Math.min(150, marker._xscale * 1.325);
-			marker._yscale = Math.min(150, marker._yscale * 1.325);
+			FocusedMarkerInstance._x = focusedMarker_x;
+		}
+
+		FocusedMarkerInstance._alpha = Math.max(focusedMarker_mc._alpha, 75);
+
+		if (HUDMenu.EnemyHealth_mc.BracketsInstance._alpha)
+		{
+			FocusedMarkerInstance.Target.TextFieldInstance._alpha = 0;
 		}
 		else
 		{
-			marker._xscale = Math.min(135, marker._xscale);
-			marker._yscale = Math.min(135, marker._yscale);
+			FocusedMarkerInstance.Target.TextFieldInstance._alpha = 100;
 		}
+
+		// iHUD show/hide functionality
+		if (DirectionRect._alpha)
+		{
+			FocusedMarkerInstance._alpha = 100;
+		}
+		else
+		{
+			FocusedMarkerInstance._alpha = 0;
+		}
+	}
+}
+
+function UnfocusMarker():Void
+{
+	FocusedMarkerInstance.gotoAndPlay("FadeOut");
+	FocusedMarkerInstance.Movie = undefined;
+}
+
+// Reference: HUDMenu.as
+function SetMarkers():Void
+{
+	while (MarkerList.length)
+	{
+		MarkerList.pop().movie.removeMovieClip();
+	}
+
+	var markersDataLength:Number = MarkersData.length / COMPASS_STRIDE;
+
+	for (var i:Number = 0; i < markersDataLength; i++)
+	{
+		var j:Number = i * COMPASS_STRIDE;
+
+		var markerData:Object = { movie: undefined, heading: MarkersData[j + COMPASS_HEADING] };
+
+		var markerType:Number = MarkersData[j + COMPASS_GOTOANDSTOP];
+
+		if (markerType == MarkerUnknownLocation)
+		{
+			markerData.movie = DirectionRect.MarkerHolder.attachMovie("Compass Marker Unknown", "CompassMarker" + MarkerList.length, DirectionRect.MarkerHolder.getNextHighestDepth());
+		}
+		else if (markerType == MarkerQuest || markerType == MarkerQuestDoor)
+		{
+			markerData.movie = DirectionRect.QuestHolder.attachMovie("Compass Marker", "CompassMarker" + MarkerList.length, DirectionRect.QuestHolder.getNextHighestDepth());
+		}
+		else
+		{
+			markerData.movie = DirectionRect.MarkerHolder.attachMovie("Compass Marker", "CompassMarker" + MarkerList.length, DirectionRect.MarkerHolder.getNextHighestDepth());
+		}
+
+		MarkerList.push(markerData);
+
+		var marker_mc:MovieClip = markerData.movie;
+
+		// The function to position the markers in the compass checks if the marker type
+		// is CompassMarkerQuest (1) or CompassMarkerQuestDoor (2) to limit the marker position
+		// to the border of the compass. Unknown locations should not be kept always
+		// within the compass
+		if (markerType == MarkerUnknownLocation)
+		{
+			// Set to different than CompassMarkerQuest (1) or CompassMarkerQuestDoor (2),
+			// 0 is an invalid frame so we set 3
+			marker_mc.gotoAndStop(3);
+		}
+		else
+		{
+			marker_mc.gotoAndStop(markerType);
+		}
+
+		marker_mc._alpha = MarkersData[j + COMPASS_ALPHA];
+
+		// SkyHUD rescale functionality
+		var skyHUDScaleMult:Number = (HUDMenu.scl_fCompassMarker != undefined && HUDMenu.scl_fCompassMarker != NaN) ? HUDMenu.scl_fCompassMarker : 1;
+
+		var markerScale:Number = MarkersData[j + COMPASS_SCALE] * skyHUDScaleMult;
+
+		markerScale = Math.min(135, markerScale);
+
+		marker_mc._xscale = markerScale;
+		marker_mc._yscale = markerScale;
 	}
 }

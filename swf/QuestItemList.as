@@ -3,7 +3,6 @@ var entries:Array;
 
 var All:Boolean;
 var Favor:Boolean;
-var DialogueMode:Boolean;
 var StealthMode:Boolean;
 var Swimming:Boolean;
 var HorseMode:Boolean;
@@ -28,9 +27,9 @@ function QuestItemList(a_positionX:Number, a_positionY:Number, a_maxHeight:Numbe
 
 	maxHeight = Stage.height * a_maxHeight;
 
+	// Show except in dialogue mode
 	All = true;
 	Favor = true;
-	DialogueMode = true;
 	StealthMode = true;
 	Swimming = true;
 	HorseMode = true;
@@ -151,13 +150,13 @@ function RemoveAllQuests():Void
 
 function ByAgeThenMiscellaneousQuests(a_questItem1:QuestItem, a_questItem2:QuestItem):Number
 {
-	if (a_questItem1.Title.EndPiece._currentframe != a_questItem1.miscQuestFrame &&
-		a_questItem2.Title.EndPiece._currentframe == a_questItem2.miscQuestFrame)
+	if (a_questItem1.TitleEndPiece._currentframe != QuestItem.miscQuestFrame &&
+		a_questItem2.TitleEndPiece._currentframe == QuestItem.miscQuestFrame)
 	{
 		return -1;
 	}
-	else if (a_questItem1.Title.EndPiece._currentframe == a_questItem1.miscQuestFrame &&
-			 a_questItem2.Title.EndPiece._currentframe != a_questItem2.miscQuestFrame)
+	else if (a_questItem1.TitleEndPiece._currentframe == QuestItem.miscQuestFrame &&
+			 a_questItem2.TitleEndPiece._currentframe != QuestItem.miscQuestFrame)
 	{
 		return 1;
 	}

@@ -24,9 +24,7 @@ namespace hooks
 	bool UpdatePlayerSetMarker(const RE::HUDMarkerManager* a_hudMarkerManager, RE::HUDMarker::ScaleformData* a_markerData,
 							   RE::NiPoint3* a_pos, const RE::RefHandle& a_refHandle, std::uint32_t a_markerGotoFrame);
 
-	bool SetCompassMarkers(RE::GFxValue::ObjectInterface* a_objectInterface, void* a_data,
-						   RE::GFxValue* a_result, const char* a_name, const RE::GFxValue* a_args, 
-						   std::uint32_t a_numArgs, bool a_isDObj);
+	void UpdateCompass(RE::Compass* a_compass);
 
 	class HUDMarkerManager
 	{
@@ -60,9 +58,10 @@ namespace hooks
 		static constexpr REL::RelocationID UpdateId{ 50773, 51668 };
 
 	public:
+		static inline REL::Relocation<std::uintptr_t> vTable{ RE::VTABLE_Compass[0] };
 
-		static inline REL::Relocation<bool(*)(RE::Compass*)> SetMarkers{ SetMarkersId };
-		static inline REL::Relocation<void(*)(RE::Compass*)> Update{ UpdateId };
+		static inline REL::Relocation<bool (*)(RE::Compass*)> SetMarkers{ SetMarkersId };
+		static inline REL::Relocation<void (*)(RE::Compass*)> Update{ UpdateId };
 	};
 
 	static inline void Install()
@@ -145,29 +144,17 @@ namespace hooks
 			{}
 		};
 
-		// `Compass::SetMarkers` (call to movie->Invoke("SetCompassMarkers", ...))
-		struct SetCompassMarkersHook : Hook<5>
-		{
-			// In AE `Compass::SetMarkers` is inlined in `Compass::Update`
-			static std::uintptr_t Address() { return REL::Module::IsAE() ? Compass::Update.address() + 0x128 : Compass::SetMarkers.address() + 0x10F; }
-
-			SetCompassMarkersHook(std::uintptr_t a_hookedAddress) :
-				Hook{ a_hookedAddress, reinterpret_cast<std::uintptr_t>(&SetCompassMarkers) }
-			{}
-		};
-
 		UpdateQuestsHook updateQuestsHook{ UpdateQuestsHook::Address() };
-		AllowedToShowMapMarkerHook allowedToShowMapMarkerHook[2] = { AllowedToShowMapMarkerHook::Address1(), AllowedToShowMapMarkerHook::Address2() };
+		AllowedToShowMapMarkerHook allowedToShowMapMarkerHook[2]{ AllowedToShowMapMarkerHook::Address1(), AllowedToShowMapMarkerHook::Address2() };
 		UpdateLocationsHook updateLocationsHook{ UpdateLocationsHook::Address() };
 		UpdateEnemiesHook updateEnemiesHook{ UpdateEnemiesHook::Address() };
 		UpdatePlayerSetMarkerHook updatePlayerSetMarkerHook{ UpdatePlayerSetMarkerHook::Address() };
-		SetCompassMarkersHook setCompassMarkersHook{ SetCompassMarkersHook::Address() };
 		
 		// The destination of the hook for `AllowedToShowMapMarker` is the same,
 		// so we need to allocate memory for it only once
 		static DefaultTrampoline defaultTrampoline{ updateQuestsHook.getSize() + allowedToShowMapMarkerHook->getSize() +
 													updateLocationsHook.getSize() + updateEnemiesHook.getSize() +
-													updatePlayerSetMarkerHook.getSize() + setCompassMarkersHook.getSize() };
+													updatePlayerSetMarkerHook.getSize() };
 		
 		defaultTrampoline.write_branch(updateQuestsHook);
 		defaultTrampoline.write_call(allowedToShowMapMarkerHook[0]);
@@ -175,7 +162,8 @@ namespace hooks
 		defaultTrampoline.write_call(updateLocationsHook);
 		defaultTrampoline.write_call(updateEnemiesHook);
 		defaultTrampoline.write_call(updatePlayerSetMarkerHook);
-		defaultTrampoline.write_call(setCompassMarkersHook);
+
+		Compass::vTable.write_vfunc(1, UpdateCompass);
 	}
 
 	namespace compat
@@ -188,6 +176,14 @@ namespace hooks
 
 			static inline void Install(SKSE::WinAPI::HMODULE a_moduleHandle)
 			{
+				// `ImportManager::SetupHUDMenu` call to a_movieView->GetMovieDef()
+				struct GetCompassMovieDefHook : Hook<6>
+				{
+					GetCompassMovieDefHook(std::uintptr_t a_hookedAddress) :
+						Hook{ a_hookedAddress, reinterpret_cast<std::uintptr_t>(&GetCompassMovieDef) }
+					{}
+				};
+
 				std::uintptr_t getCompassMovieDefHookAddress = SigScanner::FindPattern
 				<
 					"4C 8B F1 "	// mov     r14, rcx
@@ -197,14 +193,6 @@ namespace hooks
 					"?? 8B ?? "	// mov     ??, rax
 					"48 85 C0"	// test    rax, rax
 				>(a_moduleHandle) + 6;
-
-				// `ImportManager::SetupHUDMenu` call to a_movieView->GetMovieDef()
-				struct GetCompassMovieDefHook : Hook<6>
-				{
-					GetCompassMovieDefHook(std::uintptr_t a_hookedAddress) :
-						Hook{ a_hookedAddress, reinterpret_cast<std::uintptr_t>(&GetCompassMovieDef) }
-					{}
-				};
 
 				GetCompassMovieDefHook getCompassMovieDefHook{ getCompassMovieDefHookAddress };
 
