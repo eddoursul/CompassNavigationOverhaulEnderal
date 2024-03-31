@@ -1,4 +1,4 @@
-﻿#include "../utils.as"
+﻿#include "utils.as"
 
 import FocusedMarker;
 
@@ -147,7 +147,7 @@ function SetMarkers():Void
 
 		if (markerType == MarkerUnknownLocation)
 		{
-			markerData.movie = DirectionRect.MarkerHolder.attachMovie("Compass Marker Unknown", "CompassMarker" + MarkerList.length, DirectionRect.MarkerHolder.getNextHighestDepth());
+			markerData.movie = DirectionRect.MarkerHolder.attachMovie("Unknown Location", "CompassMarker" + MarkerList.length, DirectionRect.MarkerHolder.getNextHighestDepth());
 		}
 		else if (markerType == MarkerQuest || markerType == MarkerQuestDoor)
 		{
