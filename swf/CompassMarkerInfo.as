@@ -1,4 +1,4 @@
-class FocusedMarker extends MovieClip
+class CompassMarkerInfo extends MovieClip
 {
 	static var UNITS_TO_METERS:Number = 0.01428;
 	static var UNITS_TO_FEET:Number = 0.046875;
@@ -17,7 +17,7 @@ class FocusedMarker extends MovieClip
 	var Location:String;
 	var UseMetricUnits:Boolean;
 
-	public function FocusedMarker()
+	public function CompassMarkerInfo()
 	{
 		Index = -1;
 		Distance.TextFieldInstance.autoSize = "center";

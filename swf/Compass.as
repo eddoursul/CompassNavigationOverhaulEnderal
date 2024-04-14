@@ -1,6 +1,6 @@
 ﻿#include "utils.as"
 
-import FocusedMarker;
+import CompassMarkerInfo;
 
 // Instances
 var CompassFrame:MovieClip;
@@ -9,7 +9,7 @@ var CompassMask_mc:MovieClip;
 var DirectionRect:MovieClip;
 var CompassFrameAlt:MovieClip;
 
-var FocusedMarkerInstance:FocusedMarker;
+var FocusedMarkerInfo:CompassMarkerInfo;
 
 // References
 var HUDMenu:MovieClip = _root.HUDMovieBaseInstance;
@@ -58,32 +58,32 @@ function Compass():Void
 
 function SetUnits(a_useMetric:Boolean):Void
 {
-	FocusedMarkerInstance.UseMetricUnits = a_useMetric;
+	FocusedMarkerInfo.UseMetricUnits = a_useMetric;
 }
 
 function SetFocusedMarkerInfo(a_target:String, a_distance:Number, a_heightDifference:Number, a_markerIndex:Number):Void
 {
-	FocusedMarkerInstance.SetDistanceAndHeightDifference(a_distance, a_heightDifference);
-	FocusedMarkerInstance.Movie = MarkerList[a_markerIndex].movie;
-	FocusedMarkerInstance.Index = a_markerIndex;
-	FocusedMarkerInstance.Target.TextFieldInstance.text = a_target;
+	FocusedMarkerInfo.SetDistanceAndHeightDifference(a_distance, a_heightDifference);
+	FocusedMarkerInfo.Movie = MarkerList[a_markerIndex].movie;
+	FocusedMarkerInfo.Index = a_markerIndex;
+	FocusedMarkerInfo.Target.TextFieldInstance.text = a_target;
 }
 
 function FocusMarker():Void
 {
-	FocusedMarkerInstance.gotoAndPlay("FadeIn");
+	FocusedMarkerInfo.gotoAndPlay("FadeIn");
 }
 
 function UpdateFocusedMarker():Void
 {
-	var focusedMarker_mc:MovieClip = FocusedMarkerInstance.Movie;
+	var focusedMarker_mc:MovieClip = FocusedMarkerInfo.Movie;
 
 	if (focusedMarker_mc != undefined)
 	{
 		// SkyHUD rescale functionality
 		var skyHUDScaleMult:Number = (HUDMenu.scl_fCompassMarker != undefined && HUDMenu.scl_fCompassMarker != NaN) ? HUDMenu.scl_fCompassMarker : 1;
 
-		var markerScale:Number = MarkersData[FocusedMarkerInstance.Index * COMPASS_STRIDE + COMPASS_SCALE] * skyHUDScaleMult;
+		var markerScale:Number = MarkersData[FocusedMarkerInfo.Index * COMPASS_STRIDE + COMPASS_SCALE] * skyHUDScaleMult;
 
 		markerScale = Math.min(145, markerScale * 1.325);
 
@@ -95,36 +95,36 @@ function UpdateFocusedMarker():Void
 		var compassMask_x:Number = localToLocal(CompassMask_mc, this).x;
 		if (focusedMarker_x >= compassMask_x)
 		{
-			FocusedMarkerInstance._x = focusedMarker_x;
+			FocusedMarkerInfo._x = focusedMarker_x;
 		}
 
-		FocusedMarkerInstance._alpha = Math.max(focusedMarker_mc._alpha, 75);
+		FocusedMarkerInfo._alpha = Math.max(focusedMarker_mc._alpha, 75);
 
 		if (HUDMenu.EnemyHealth_mc.BracketsInstance._alpha)
 		{
-			FocusedMarkerInstance.Target.TextFieldInstance._alpha = 0;
+			FocusedMarkerInfo.Target.TextFieldInstance._alpha = 0;
 		}
 		else
 		{
-			FocusedMarkerInstance.Target.TextFieldInstance._alpha = 100;
+			FocusedMarkerInfo.Target.TextFieldInstance._alpha = 100;
 		}
 
 		// iHUD show/hide functionality
 		if (DirectionRect._alpha)
 		{
-			FocusedMarkerInstance._alpha = 100;
+			FocusedMarkerInfo._alpha = 100;
 		}
 		else
 		{
-			FocusedMarkerInstance._alpha = 0;
+			FocusedMarkerInfo._alpha = 0;
 		}
 	}
 }
 
 function UnfocusMarker():Void
 {
-	FocusedMarkerInstance.gotoAndPlay("FadeOut");
-	FocusedMarkerInstance.Movie = undefined;
+	FocusedMarkerInfo.gotoAndPlay("FadeOut");
+	FocusedMarkerInfo.Movie = undefined;
 }
 
 // Reference: HUDMenu.as
