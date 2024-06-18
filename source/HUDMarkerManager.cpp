@@ -227,7 +227,7 @@ namespace CNO
 					for (auto& [quest, questItem] : questItemMap)
 					{
 						questItemList->AddQuest(questItem);
-						questItemList->SetQuestSide(GetSideInQuest(questItem.type));
+						//questItemList->SetQuestSide(GetSideInQuest(questItem.type));
 
 						// If we call a function more than once per frame (like in this for-loop)
 						// we need to update the stage with `GFxMovieView::Advance`, otherwise graphical
@@ -415,6 +415,7 @@ namespace CNO
 
 	std::string HUDMarkerManager::GetSideInQuest(RE::QUEST_DATA::Type a_questType) const
 	{
+		/*
 		switch (a_questType)
 		{
 		case RE::QUEST_DATA::Type::kCivilWar:
@@ -438,6 +439,7 @@ namespace CNO
 				return "Dawnguard"; 
 			}
 		}
+		*/
 
 		return { };
 	}
